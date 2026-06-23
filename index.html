@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSUD SURIANSYAH BANJARMASIN — DASHBOARD BPJS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz@8..60&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#263238;
+    --paper:#e8f5e9;
+    --paper-raised:#ffffff;
+    --rule:#d8d2c4;
+    --accent:#d84315;
+    --accent-soft:#ffccbc;
+    --good:#3f6b4f;
+    --good-soft:#e1ebe2;
+    --warn:#a87b1f;
+    --warn-soft:#f3e8d2;
+    --muted:#6b6358;
+    --header-bg:#d84315;
+    --header-bg-hover:#bf360c;
+    --nav-bg:#d84315;
+    --nav-active:#ff5722;
+    --nav-hover:#bf360c;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Source Serif 4', serif;
+    --sans: 'Inter', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#e8f5e9;color:var(--ink);font-family:var(--sans);}
+
+  /* ====== NAVIGATION BAR ====== */
+  .navbar{
+    background:var(--nav-bg);
+    position:sticky;
+    top:0;
+    z-index:100;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  .nav-wrap{
+    max-width:1200px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 20px;
+  }
+  .nav-brand{
+    font-family:var(--serif);
+    font-size:22px;
+    font-weight:700;
+    color:#fff;
+    padding:14px 0;
+    letter-spacing:.02em;
+    text-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .nav-brand span{
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:500;
+    color:#ffccbc;
+    display:block;
+    letter-spacing:.06em;
+    margin-top:4px;
+  }
+  .nav-links{
+    display:flex;
+    gap:0;
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+  .nav-links li a{
+    display:block;
+    padding:20px 22px;
+    color:#ffccbc;
+    text-decoration:none;
+    font-family:var(--mono);
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-weight:600;
+    transition:all .2s;
+    border-bottom:3px solid transparent;
+  }
+  .nav-links li a:hover{
+    color:#fff;
+    background:var(--nav-hover);
+    text-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .nav-links li a.active{
+    color:#fff;
+    border-bottom-color:#ffab91;
+    background:var(--nav-hover);
+    text-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .nav-links li a.coming-soon{
+    opacity:.5;
+    cursor:not-allowed;
+  }
+  .nav-links li a.coming-soon:hover{
+    color:#b0bcc8;
+    background:transparent;
+  }
+
+  /* ====== MAIN WRAPPER ====== */
+  .wrap{max-width:1200px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.page{
+    border-bottom:3px double var(--header-bg);
+    padding:20px 24px 22px;
+    margin-bottom:24px;
+    background:linear-gradient(135deg, #fff8e1 0%, #e8f5e9 100%);
+    border-radius:4px;
+    box-shadow:0 2px 0 rgba(0,0,0,.04);
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--header-bg);
+    margin:0 0 10px;
+    font-weight:600;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:clamp(32px,5vw,48px);
+    line-height:1.1;
+    margin:0 0 10px;
+    letter-spacing:.01em;
+    color:var(--header-bg);
+    text-shadow:0 1px 0 rgba(0,0,0,.05);
+  }
+  .sub{font-size:16px;color:#4e342e;margin:0;line-height:1.5;font-weight:500;}
+
+  /* ====== STATUS BAR ====== */
+  .status-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:18px;
+  }
+  .status-dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--rule);
+    flex-shrink:0;
+  }
+  .status-dot.ok{background:var(--good);}
+  .status-dot.err{background:var(--accent);}
+  .status-dot.loading{background:var(--warn);animation:pulse 1s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  /* ====== CHART SECTIONS ====== */
+  .chart-section{
+    background:var(--paper-raised);
+    border:1.5px solid var(--rule);
+    border-radius:4px;
+    overflow:hidden;
+    margin-bottom:28px;
+    box-shadow:0 2px 0 rgba(0,0,0,.03);
+  }
+  .chart-header{
+    background:var(--header-bg);
+    color:#fff;
+    padding:16px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .chart-header h2{
+    font-family:var(--serif);
+    font-size:20px;
+    font-weight:700;
+    margin:0;
+  }
+  .chart-header .desc{
+    font-family:var(--mono);
+    font-size:11px;
+    color:#cfc6b4;
+    letter-spacing:.03em;
+  }
+  .chart-body{
+    padding:24px;
+    position:relative;
+    height:380px;
+  }
+  .chart-body.tall{height:420px;}
+
+  /* ====== FILTER BAR ====== */
+  .filter-bar{
+    background:var(--paper-raised);
+    border:1.5px solid var(--rule);
+    border-radius:4px;
+    padding:22px 24px;
+    margin-bottom:22px;
+    box-shadow:0 2px 0 rgba(0,0,0,.03);
+  }
+  .filter-label{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--muted);
+    margin:0 0 14px;
+    display:block;
+  }
+  .filter-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:12px;
+    align-items:end;
+  }
+  .filter-group{display:flex;flex-direction:column;gap:6px;}
+  .filter-group label{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .filter-group select, .filter-group button{
+    font-family:var(--sans);
+    font-size:14px;
+    padding:10px 12px;
+    border:2px solid var(--rule);
+    border-radius:3px;
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    width:100%;
+  }
+  .filter-group select:focus{outline:none;border-color:var(--header-bg);box-shadow:0 0 0 3px var(--accent-soft);}
+  .filter-group select option{font-size:14px;}
+
+  .btn-download{
+    background:var(--good)!important;
+    color:#fff!important;
+    border-color:var(--good)!important;
+    font-weight:600;
+    transition:opacity .15s;
+  }
+  .btn-download:hover{opacity:.85;}
+  .btn-download:disabled{
+    background:#a8a194!important;
+    border-color:#a8a194!important;
+    cursor:not-allowed;
+    opacity:.7;
+  }
+
+  /* ====== TABS ====== */
+  .tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:20px;
+    border-bottom:2px solid var(--rule);
+    padding-bottom:0;
+  }
+  .tab{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    padding:10px 20px;
+    background:transparent;
+    border:none;
+    border-bottom:3px solid transparent;
+    color:var(--muted);
+    cursor:pointer;
+    font-weight:600;
+    transition:all .15s;
+  }
+  .tab:hover{color:var(--ink);}
+  .tab.active{
+    color:var(--ink);
+    border-bottom-color:var(--header-bg);
+  }
+
+  /* ====== TABLE ====== */
+  .table-wrap{
+    background:var(--paper-raised);
+    border:1.5px solid var(--rule);
+    border-radius:4px;
+    overflow:hidden;
+    margin-bottom:22px;
+  }
+  .table-header{
+    background:var(--header-bg);
+    color:#fff;
+    padding:16px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .table-header h2{
+    font-family:var(--serif);
+    font-size:20px;
+    font-weight:700;
+    margin:0;
+  }
+  .table-header .count{
+    font-family:var(--mono);
+    font-size:12px;
+    color:#cfc6b4;
+  }
+  .table-scroll{overflow-x:auto;}
+  table.data-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    min-width:400px;
+    table-layout:fixed;
+  }
+  table.data-table thead th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    border-bottom:2px solid var(--header-bg);
+    padding:10px 12px;
+    white-space:nowrap;
+    background:#f1f8f2;
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+  table.data-table thead th.num{text-align:right;}
+  table.data-table tbody td{
+    padding:9px 12px;
+    border-bottom:1.5px solid var(--rule);
+    vertical-align:top;
+    word-break:break-word;
+    overflow-wrap:break-word;
+  }
+  table.data-table tbody td.num{
+    text-align:right;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  table.data-table tbody tr:hover{background:#fbfaf6;}
+  table.data-table tbody tr:nth-child(even){background:#f1f8f2;}
+  table.data-table tbody tr:nth-child(even):hover{background:#e8f5e9;}
+
+  /* ====== PAGINATION ====== */
+  .pagination{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    padding:14px 16px;
+    background:#f1f8f2;
+    border-top:1.5px solid var(--rule);
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .pagination button{
+    padding:6px 14px;
+    border:2px solid var(--rule);
+    background:#fff;
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:12px;
+    cursor:pointer;
+    border-radius:3px;
+    font-weight:600;
+    transition:all .15s;
+  }
+  .pagination button:hover:not(:disabled){
+    border-color:var(--header-bg);
+    color:var(--header-bg);
+  }
+  .pagination button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+  .pagination .page-info{
+    color:var(--muted);
+    padding:0 8px;
+  }
+  .pagination .rows-per-page{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-left:auto;
+  }
+  .pagination .rows-per-page select{
+    font-family:var(--mono);
+    font-size:12px;
+    padding:4px 8px;
+    border:2px solid var(--rule);
+    border-radius:3px;
+    background:#fff;
+  }
+
+  /* ====== STATS CARDS ====== */
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:16px;
+    margin-bottom:28px;
+  }
+  .stat-card{
+    background:var(--paper-raised);
+    border:1.5px solid var(--rule);
+    border-radius:4px;
+    padding:20px 22px;
+    text-align:center;
+    box-shadow:0 2px 0 rgba(0,0,0,.03);
+  }
+  .stat-card .stat-label{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .stat-card .stat-value{
+    font-family:var(--serif);
+    font-size:32px;
+    font-weight:700;
+    color:var(--ink);
+    line-height:1;
+  }
+  .stat-card .stat-change{
+    font-family:var(--mono);
+    font-size:11px;
+    margin-top:6px;
+  }
+  .stat-card .stat-change.up{color:var(--good);}
+  .stat-card .stat-change.down{color:var(--header-bg);}
+  .stat-card.accent{border-color:var(--header-bg);}
+  .stat-card.accent .stat-value{color:var(--header-bg);}
+  .stat-card.good{border-color:var(--good);}
+  .stat-card.good .stat-value{color:var(--good);}
+
+  /* ====== EMPTY / ERROR ====== */
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty-state .glyph{font-family:var(--mono);font-size:32px;color:#a5d6a7;margin-bottom:14px;display:block;}
+  .empty-state p{margin:6px 0;font-size:15px;line-height:1.6;}
+
+  .load-error{
+    background:var(--accent-soft);
+    border:1.5px solid var(--accent);
+    color:#7a2e1c;
+    padding:16px 20px;
+    border-radius:4px;
+    font-size:14px;
+    font-family:var(--mono);
+    line-height:1.6;
+  }
+
+  /* ====== LOG VIEW ====== */
+  .log-view{display:none;}
+  .log-view.active{display:block;}
+
+  /* ====== NOTICE ====== */
+  .notice{
+    background:var(--warn-soft);
+    border:1.5px solid var(--warn);
+    color:#5c4413;
+    padding:12px 16px;
+    border-radius:4px;
+    font-size:13px;
+    font-family:var(--mono);
+    margin-bottom:16px;
+    display:none;
+  }
+  .notice.show{display:block;}
+  .notice.success{
+    background:var(--good-soft);
+    border-color:var(--good);
+    color:var(--good);
+  }
+  .notice.error{
+    background:var(--accent-soft);
+    border-color:var(--header-bg);
+    color:var(--header-bg);
+  }
+
+  /* ====== VIEW TOGGLE ====== */
+  .view-section{display:none;}
+  .view-section.active{display:block;}
+
+  footer.page{
+    margin-top:40px;
+    padding-top:16px;
+    border-top:1.5px solid var(--rule);
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:.03em;
+    line-height:1.6;
+  }
+
+  @media (max-width:768px){
+    .nav-wrap{flex-direction:column;align-items:flex-start;}
+    .nav-links{width:100%;overflow-x:auto;}
+    .filter-grid{grid-template-columns:1fr;}
+    .stats-grid{grid-template-columns:repeat(2, 1fr);}
+    .table-header h2{font-size:17px;}
+    .tabs{overflow-x:auto;flex-wrap:nowrap;}
+    .tab{white-space:nowrap;}
+    .pagination{flex-wrap:wrap;}
+    .pagination .rows-per-page{margin-left:0;width:100%;justify-content:center;margin-top:8px;}
+    .chart-body{height:300px;}
+    .chart-body.tall{height:340px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== NAVIGATION BAR ====== -->
+<nav class="navbar">
+  <div class="nav-wrap">
+    <div class="nav-brand">
+      RSUD SURIANSYAH BANJARMASIN
+      <span>DASHBOARD BPJS</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#" class="active" data-nav="data">📊 Data BPJS</a></li>
+      <li><a href="#" class="coming-soon" data-nav="input" title="Segera hadir">📝 Input Data</a></li>
+      <li><a href="#" data-nav="laporan">📈 Laporan</a></li>
+      <li><a href="#" data-nav="keluar">🚪 Keluar</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="page">
+    <p class="eyebrow">RSUD SURIANSYAH BANJARMASIN</p>
+    <h1>DASHBOARD BPJS</h1>
+    <p class="sub">Monitoring data pasien BPJS: perbandingan seluruh pasien vs Rambai & Kasturi.</p>
+  </header>
+
+  <div class="status-bar">
+    <span class="status-dot loading" id="statusDot"></span>
+    <span id="statusText">Memuat data dari server…</span>
+  </div>
+
+  <!-- ====== STATISTICS CARDS ====== -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-label">Total Pasien (Semua)</div>
+      <div class="stat-value" id="statTotalAll">0</div>
+      <div class="stat-change" id="statChangeAll">–</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-label">Rambai + Kasturi</div>
+      <div class="stat-value" id="statTotalFilter">0</div>
+      <div class="stat-change" id="statChangeFilter">–</div>
+    </div>
+    <div class="stat-card good">
+      <div class="stat-label">Persentase Filter</div>
+      <div class="stat-value" id="statPercent">0%</div>
+      <div class="stat-change" id="statPercentLabel">dari total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bulan Terdata</div>
+      <div class="stat-value" id="statBulan">0</div>
+      <div class="stat-change">sheet aktif</div>
+    </div>
+  </div>
+
+  <!-- ====== FILTER BAR ====== -->
+  <div class="filter-bar">
+    <label class="filter-label">Filter Grafik & Data</label>
+    <div class="filter-grid">
+      <div class="filter-group">
+        <label for="filterTahun">Tahun</label>
+        <select id="filterTahun">
+          <option value="2026" selected>2026</option>
+          <option value="2025">2025</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterBulan">Bulan / Sheet</label>
+        <select id="filterBulan">
+          <option value="">Semua Bulan (Pergerakan Tahunan)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterJenis">Jenis Tampilan</label>
+        <select id="filterJenis">
+          <option value="all">Semua Sheet</option>
+          <option value="filtered">Hanya Sheet Filter (Rambai & Kasturi)</option>
+          <option value="original">Hanya Sheet Asli</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>&nbsp;</label>
+        <button id="downloadBtn" class="btn-download" type="button">⬇ Download Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== TABS ====== -->
+  <div class="tabs">
+    <button class="tab active" data-tab="grafik">📈 Grafik</button>
+    <button class="tab" data-tab="data">📊 Data Tabel</button>
+    <button class="tab" data-tab="log">📋 Log</button>
+  </div>
+
+  <div class="notice" id="notice"></div>
+
+  <!-- ====== GRAFIK VIEW ====== -->
+  <div id="grafikView" class="view-section active">
+
+    <!-- Chart 1: Perbandingan Total vs Rambai+Kasturi -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div>
+          <h2>📊 Perbandingan: Seluruh Pasien vs Rambai & Kasturi</h2>
+          <span class="desc">Batang biru = Total pasien · Batang merah = Rambai + Kasturi</span>
+        </div>
+      </div>
+      <div class="chart-body tall">
+        <canvas id="chartPerbandingan"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart 2: Khusus Rambai & Kasturi -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div>
+          <h2>🎯 Detail: Rambai & Kasturi Saja</h2>
+          <span class="desc">Pergerakan pasien di ruangan Rambai dan Kasturi per periode</span>
+        </div>
+      </div>
+      <div class="chart-body tall">
+        <canvas id="chartFilterOnly"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ====== DATA TABEL VIEW ====== -->
+  <div id="dataView" class="view-section">
+    <div id="resultArea"></div>
+  </div>
+
+  <!-- ====== LOG VIEW ====== -->
+  <div id="logView" class="view-section log-view">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h2>📋 Log Eksekusi Filter</h2>
+        <span class="count" id="logCount">0 entri</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="logTable">
+          <thead>
+            <tr>
+              <th>Waktu Eksekusi</th>
+              <th>Sheet Sumber</th>
+              <th>Sheet Hasil</th>
+              <th class="num">Baris Asli</th>
+              <th class="num">Baris Hasil</th>
+              <th class="num">Persentase</th>
+              <th>Rincian</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="page">
+    DATA SUMBER: GOOGLE SHEETS VIA WEB API · RSUD SURIANSYAH BANJARMASIN · DASHBOARD BPJS v2.0
+  </footer>
+</div>
+
+<script>
+// ====== KONFIGURASI ======
+const API_URL = "https://script.google.com/macros/s/AKfycbyCUxoSxOZ90qBvtCFaJSGxE_gRYZrVzS0Eocb5Q1H6mGVukiP6fvWndXCG99auTLkYpQ/exec";
+const SUFFIX_FILTER = " (RAMBAI DAN KASTURI)";
+const KOLOM_TAMPIL = [1, 9]; // B=1, J=9
+
+let ALL_DATA = {};
+let LOG_DATA = [];
+let CURRENT_TAB = 'grafik';
+let PAGINATION = {};
+const DEFAULT_ROWS_PER_PAGE = 50;
+const ROWS_PER_PAGE_OPTIONS = [25, 50, 100, 200, 500, 'all'];
+
+// Chart instances
+let chartPerbandingan = null;
+let chartFilterOnly = null;
+
+const elStatusDot = document.getElementById('statusDot');
+const elStatusText = document.getElementById('statusText');
+const elFilterTahun = document.getElementById('filterTahun');
+const elFilterBulan = document.getElementById('filterBulan');
+const elFilterJenis = document.getElementById('filterJenis');
+const elResult = document.getElementById('resultArea');
+const elLogBody = document.getElementById('logBody');
+const elLogCount = document.getElementById('logCount');
+const elNotice = document.getElementById('notice');
+const elDownloadBtn = document.getElementById('downloadBtn');
+
+function setStatus(state, text){
+  elStatusDot.className = 'status-dot ' + state;
+  elStatusText.textContent = text;
+}
+
+function showNotice(text, type='info'){
+  elNotice.textContent = text;
+  elNotice.className = 'notice show ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+  setTimeout(() => elNotice.classList.remove('show'), 5000);
+}
+
+function escapeHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtDate(d){
+  if(!d) return '–';
+  const date = new Date(d);
+  if(isNaN(date)) return String(d);
+  return date.toLocaleString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+
+// ====== NAVIGATION ======
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const nav = link.dataset.nav;
+
+    if(link.classList.contains('coming-soon')){
+      showNotice('📝 Fitur Input Data akan segera hadir!', 'info');
+      return;
+    }
+
+    if(nav === 'keluar'){
+      if(confirm('Yakin ingin keluar dari dashboard?')){
+        window.location.href = 'about:blank';
+      }
+      return;
+    }
+
+    document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+
+    if(nav === 'data'){
+      document.querySelector('.wrap').style.display = 'block';
+    } else if(nav === 'laporan'){
+      showNotice('📈 Fitur Laporan detail sedang dalam pengembangan.', 'info');
+    }
+  });
+});
+
+// ====== FETCH DATA ======
+async function loadData(){
+  setStatus('loading', 'Memuat data dari server…');
+  elDownloadBtn.disabled = true;
+  try{
+    const res = await fetch(API_URL + '?_=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    if(json.error) throw new Error(json.error);
+
+    ALL_DATA = json.data || {};
+    LOG_DATA = json.log || [];
+
+    PAGINATION = {};
+    Object.keys(ALL_DATA).forEach(name => {
+      PAGINATION[name] = { currentPage: 1, rowsPerPage: DEFAULT_ROWS_PER_PAGE };
+    });
+
+    populateFilters();
+    updateStats();
+    renderCharts();
+    renderData();
+    renderLog();
+
+    const totalSheets = Object.keys(ALL_DATA).length;
+    const totalRows = Object.values(ALL_DATA).reduce((sum, s) => sum + (s.rows?.length || 0), 0);
+    setStatus('ok', 'Data termuat · ' + totalSheets + ' sheet · ' + totalRows.toLocaleString('id-ID') + ' baris · ' + LOG_DATA.length + ' log');
+    elDownloadBtn.disabled = false;
+
+  }catch(err){
+    setStatus('err', 'Gagal memuat data');
+    elDownloadBtn.disabled = true;
+    elResult.innerHTML = '<div class="load-error">Gagal mengambil data dari server.<br>Penyebab: ' + escapeHtml(err.message) + '<br><br>Periksa koneksi internet atau coba refresh halaman.</div>';
+  }
+}
+
+// ====== POPULATE FILTERS ======
+function populateFilters(){
+  const sheets = Object.keys(ALL_DATA).sort();
+  const bulanSet = new Set();
+
+  sheets.forEach(name => {
+    let baseName = name;
+    if(name.includes(SUFFIX_FILTER)){
+      baseName = name.replace(SUFFIX_FILTER, '');
+    }
+    bulanSet.add(baseName);
+  });
+
+  elFilterBulan.innerHTML = '<option value="">Semua Bulan (Pergerakan Tahunan)</option>';
+  Array.from(bulanSet).sort().forEach(bulan => {
+    const opt = document.createElement('option');
+    opt.value = bulan;
+    opt.textContent = bulan;
+    elFilterBulan.appendChild(opt);
+  });
+}
+
+// ====== UPDATE STATISTICS ======
+function updateStats(){
+  let totalAll = 0;
+  let totalFilter = 0;
+  let sheetCount = 0;
+
+  const selectedBulan = elFilterBulan.value;
+  const selectedJenis = elFilterJenis.value;
+
+  Object.entries(ALL_DATA).forEach(([name, data]) => {
+    const isFiltered = name.includes(SUFFIX_FILTER);
+    const baseName = isFiltered ? name.replace(SUFFIX_FILTER, '') : name;
+
+    if(selectedJenis === 'filtered' && !isFiltered) return;
+    if(selectedJenis === 'original' && isFiltered) return;
+    if(selectedBulan && baseName !== selectedBulan) return;
+
+    const rowCount = data.rows?.length || 0;
+
+    if(isFiltered){
+      totalFilter += rowCount;
+    } else {
+      totalAll += rowCount;
+      sheetCount++;
+    }
+  });
+
+  // Jika hanya filter yang dipilih, totalAll = totalFilter
+  if(selectedJenis === 'filtered'){
+    totalAll = totalFilter;
+  }
+
+  const percent = totalAll > 0 ? ((totalFilter / totalAll) * 100).toFixed(1) : 0;
+
+  document.getElementById('statTotalAll').textContent = totalAll.toLocaleString('id-ID');
+  document.getElementById('statTotalFilter').textContent = totalFilter.toLocaleString('id-ID');
+  document.getElementById('statPercent').textContent = percent + '%';
+  document.getElementById('statBulan').textContent = sheetCount;
+}
+
+// ====== RENDER CHARTS ======
+function renderCharts(){
+  const selectedBulan = elFilterBulan.value;
+  const selectedJenis = elFilterJenis.value;
+
+  // Prepare data arrays
+  let labels = [];
+  let dataTotal = [];
+  let dataFilter = [];
+
+  // Sort sheets by name
+  const sortedSheets = Object.keys(ALL_DATA).sort();
+
+  if(selectedBulan){
+    // Mode: pergerakan dalam bulan (per hari/tanggal)
+    // Untuk saat ini, kita tampilkan per sheet yang cocok
+    sortedSheets.forEach(name => {
+      const isFiltered = name.includes(SUFFIX_FILTER);
+      const baseName = isFiltered ? name.replace(SUFFIX_FILTER, '') : name;
+
+      if(baseName !== selectedBulan) return;
+      if(selectedJenis === 'filtered' && !isFiltered) return;
+      if(selectedJenis === 'original' && isFiltered) return;
+
+      const rowCount = ALL_DATA[name].rows?.length || 0;
+      labels.push(isFiltered ? 'Rambai+Kasturi' : 'Total Pasien');
+
+      if(isFiltered){
+        dataFilter.push(rowCount);
+      } else {
+        dataTotal.push(rowCount);
+      }
+    });
+  } else {
+    // Mode: pergerakan per bulan (tahunan)
+    const bulanMap = {};
+
+    sortedSheets.forEach(name => {
+      const isFiltered = name.includes(SUFFIX_FILTER);
+      const baseName = isFiltered ? name.replace(SUFFIX_FILTER, '') : name;
+
+      if(selectedJenis === 'filtered' && !isFiltered) return;
+      if(selectedJenis === 'original' && isFiltered) return;
+
+      if(!bulanMap[baseName]){
+        bulanMap[baseName] = { total: 0, filter: 0 };
+      }
+
+      const rowCount = ALL_DATA[name].rows?.length || 0;
+      if(isFiltered){
+        bulanMap[baseName].filter += rowCount;
+      } else {
+        bulanMap[baseName].total += rowCount;
+      }
+    });
+
+    // Sort by month order
+    const monthOrder = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+    const sortedMonths = Object.keys(bulanMap).sort((a, b) => {
+      const idxA = monthOrder.indexOf(a.toUpperCase().split(' ')[0]);
+      const idxB = monthOrder.indexOf(b.toUpperCase().split(' ')[0]);
+      return idxA - idxB;
+    });
+
+    sortedMonths.forEach(bulan => {
+      labels.push(bulan);
+      dataTotal.push(bulanMap[bulan].total);
+      dataFilter.push(bulanMap[bulan].filter);
+    });
+  }
+
+  // Chart 1: Perbandingan
+  renderChartPerbandingan(labels, dataTotal, dataFilter);
+
+  // Chart 2: Filter Only
+  renderChartFilterOnly(labels, dataFilter);
+}
+
+function renderChartPerbandingan(labels, dataTotal, dataFilter){
+  const ctx = document.getElementById('chartPerbandingan').getContext('2d');
+
+  if(chartPerbandingan){
+    chartPerbandingan.destroy();
+  }
+
+  chartPerbandingan = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Seluruh Pasien',
+          data: dataTotal,
+          backgroundColor: 'rgba(28, 38, 48, 0.8)',
+          borderColor: '#1c2630',
+          borderWidth: 1,
+          borderRadius: 3,
+          barPercentage: 0.6,
+          categoryPercentage: 0.7
+        },
+        {
+          label: 'Rambai + Kasturi',
+          data: dataFilter,
+          backgroundColor: 'rgba(180, 69, 47, 0.85)',
+          borderColor: '#b4452f',
+          borderWidth: 1,
+          borderRadius: 3,
+          barPercentage: 0.6,
+          categoryPercentage: 0.7
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: { family: 'Inter', size: 12 },
+            usePointStyle: true,
+            padding: 20
+          }
+        },
+        tooltip: {
+          backgroundColor: '#d84315',
+          titleFont: { family: 'Source Serif 4', size: 14 },
+          bodyFont: { family: 'Inter', size: 12 },
+          padding: 12,
+          cornerRadius: 4,
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': ' + context.parsed.y.toLocaleString('id-ID') + ' pasien';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'IBM Plex Mono', size: 9 },
+            maxRotation: 60,
+            minRotation: 45
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.06)' },
+          ticks: {
+            font: { family: 'IBM Plex Mono', size: 11 },
+            callback: function(value) {
+              return value.toLocaleString('id-ID');
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderChartFilterOnly(labels, dataFilter){
+  const ctx = document.getElementById('chartFilterOnly').getContext('2d');
+
+  if(chartFilterOnly){
+    chartFilterOnly.destroy();
+  }
+
+  chartFilterOnly = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Rambai + Kasturi',
+          data: dataFilter,
+          backgroundColor: 'rgba(63, 107, 79, 0.85)',
+          borderColor: '#3f6b4f',
+          borderWidth: 1,
+          borderRadius: 3,
+          barPercentage: 0.5,
+          categoryPercentage: 0.7
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: '#d84315',
+          titleFont: { family: 'Source Serif 4', size: 14 },
+          bodyFont: { family: 'Inter', size: 12 },
+          padding: 12,
+          cornerRadius: 4,
+          callbacks: {
+            label: function(context) {
+              return 'Rambai + Kasturi: ' + context.parsed.y.toLocaleString('id-ID') + ' pasien';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'IBM Plex Mono', size: 9 },
+            maxRotation: 60,
+            minRotation: 45
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.06)' },
+          ticks: {
+            font: { family: 'IBM Plex Mono', size: 11 },
+            callback: function(value) {
+              return value.toLocaleString('id-ID');
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ====== RENDER DATA TABLE (with pagination) ======
+function renderData(){
+  const selectedBulan = elFilterBulan.value;
+  const selectedJenis = elFilterJenis.value;
+
+  let sheetsToShow = [];
+
+  Object.entries(ALL_DATA).forEach(([sheetName, sheetData]) => {
+    const isFiltered = sheetName.includes(SUFFIX_FILTER);
+    const baseName = isFiltered ? sheetName.replace(SUFFIX_FILTER, '') : sheetName;
+
+    if(selectedJenis === 'filtered' && !isFiltered) return;
+    if(selectedJenis === 'original' && isFiltered) return;
+    if(selectedBulan && baseName !== selectedBulan) return;
+
+    sheetsToShow.push({ name: sheetName, data: sheetData, isFiltered });
+  });
+
+  if(sheetsToShow.length === 0){
+    elResult.innerHTML = `
+      <div class="empty-state">
+        <span class="glyph">[ ∅ ]</span>
+        <p>Tidak ada data yang cocok dengan filter.</p>
+        <p>Coba ubah filter bulan atau jenis sheet.</p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  sheetsToShow.forEach(({ name, data, isFiltered }) => {
+    const allHeaders = data.headers || [];
+    const allRows = data.rows || [];
+
+    const displayHeaders = KOLOM_TAMPIL.map(idx => allHeaders[idx] || 'Kolom ' + (idx + 1));
+    const displayRows = allRows.map(row => KOLOM_TAMPIL.map(idx => row[idx]));
+
+    const pg = PAGINATION[name] || { currentPage: 1, rowsPerPage: DEFAULT_ROWS_PER_PAGE };
+    const rowsPerPage = pg.rowsPerPage === 'all' ? displayRows.length : pg.rowsPerPage;
+    const currentPage = pg.currentPage;
+    const totalPages = Math.ceil(displayRows.length / rowsPerPage);
+    const safePage = Math.min(currentPage, totalPages || 1);
+    const startIdx = (safePage - 1) * rowsPerPage;
+    const endIdx = startIdx + rowsPerPage;
+    const showRows = displayRows.slice(startIdx, endIdx);
+
+    const badge = isFiltered
+      ? '<span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--good);background:var(--good-soft);border:1px solid var(--good);border-radius:3px;padding:1px 8px;margin-left:8px;vertical-align:middle;">FILTER</span>'
+      : '<span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--muted);background:#f0ece4;border:1px solid var(--rule);border-radius:3px;padding:1px 8px;margin-left:8px;vertical-align:middle;">ASLI</span>';
+
+    let thHtml = displayHeaders.map((h, i) => {
+      const width = i === 0 ? '35%' : '65%';
+      return '<th style="width:' + width + '">' + escapeHtml(h) + '</th>';
+    }).join('');
+
+    let trHtml = showRows.map(row => {
+      return '<tr>' + row.map(cell => '<td>' + escapeHtml(cell) + '</td>').join('') + '</tr>';
+    }).join('');
+
+    if(displayRows.length === 0){
+      trHtml = '<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:30px;">Tidak ada data.</td></tr>';
+    }
+
+    const paginationHtml = buildPagination(name, displayRows.length, pg.rowsPerPage, safePage);
+
+    html += `
+      <div class="table-wrap">
+        <div class="table-header">
+          <div>
+            <h2>${escapeHtml(name)}${badge}</h2>
+            <span class="count">${displayRows.length.toLocaleString('id-ID')} baris · 2 kolom (B & J)</span>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr>${thHtml}</tr></thead>
+            <tbody>${trHtml}</tbody>
+          </table>
+        </div>
+        ${paginationHtml}
+      </div>`;
+  });
+
+  elResult.innerHTML = html;
+}
+
+function buildPagination(sheetName, totalRows, rowsPerPage, currentPage){
+  if(rowsPerPage === 'all'){
+    return '<div class="pagination"><span class="page-info">Menampilkan semua ' + totalRows.toLocaleString('id-ID') + ' baris</span></div>';
+  }
+
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const startRow = (currentPage - 1) * rowsPerPage + 1;
+  const endRow = Math.min(currentPage * rowsPerPage, totalRows);
+
+  let rowsPerPageOptions = ROWS_PER_PAGE_OPTIONS.map(opt => {
+    const val = opt === 'all' ? 'all' : opt;
+    const label = opt === 'all' ? 'Semua' : opt;
+    const selected = rowsPerPage === opt ? ' selected' : '';
+    return '<option value="' + val + '"' + selected + '>' + label + '</option>';
+  }).join('');
+
+  return `
+    <div class="pagination">
+      <button onclick="changePage('${sheetName}', ${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>◀ Prev</button>
+      <span class="page-info">Halaman ${currentPage} dari ${totalPages} · Baris ${startRow.toLocaleString('id-ID')}–${endRow.toLocaleString('id-ID')} dari ${totalRows.toLocaleString('id-ID')}</span>
+      <button onclick="changePage('${sheetName}', ${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>Next ▶</button>
+      <div class="rows-per-page">
+        <label for="rpp-${sheetName}">Baris/hal:</label>
+        <select id="rpp-${sheetName}" onchange="changeRowsPerPage('${sheetName}', this.value)">
+          ${rowsPerPageOptions}
+        </select>
+      </div>
+    </div>`;
+}
+
+function changePage(sheetName, newPage){
+  if(!PAGINATION[sheetName]) return;
+  const totalRows = (ALL_DATA[sheetName]?.rows || []).length;
+  const rowsPerPage = PAGINATION[sheetName].rowsPerPage === 'all' ? totalRows : PAGINATION[sheetName].rowsPerPage;
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+  if(newPage < 1 || newPage > totalPages) return;
+  PAGINATION[sheetName].currentPage = newPage;
+  renderData();
+}
+
+function changeRowsPerPage(sheetName, value){
+  if(!PAGINATION[sheetName]) return;
+  PAGINATION[sheetName].rowsPerPage = value === 'all' ? 'all' : parseInt(value);
+  PAGINATION[sheetName].currentPage = 1;
+  renderData();
+}
+
+// ====== RENDER LOG ======
+function renderLog(){
+  if(LOG_DATA.length === 0){
+    elLogBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">Belum ada data log.</td></tr>';
+    elLogCount.textContent = '0 entri';
+    return;
+  }
+
+  const rowsHtml = LOG_DATA.map(entry => {
+    return `<tr>
+      <td>${fmtDate(entry.waktu)}</td>
+      <td>${escapeHtml(entry.sheetSumber || '')}</td>
+      <td>${escapeHtml(entry.sheetHasil || '')}</td>
+      <td class="num">${(entry.barisAsli || 0).toLocaleString('id-ID')}</td>
+      <td class="num">${(entry.barisHasil || 0).toLocaleString('id-ID')}</td>
+      <td class="num">${entry.persentase || '0%'}</td>
+      <td>${escapeHtml(entry.rincian || '')}</td>
+    </tr>`;
+  }).join('');
+
+  elLogBody.innerHTML = rowsHtml;
+  elLogCount.textContent = LOG_DATA.length + ' entri';
+}
+
+// ====== DOWNLOAD EXCEL ======
+async function downloadExcel(){
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if(isMobile){
+    showNotice('⬇ Download Excel hanya tersedia di PC/Desktop.', 'error');
+    return;
+  }
+
+  const selectedBulan = elFilterBulan.value;
+  const selectedJenis = elFilterJenis.value;
+
+  let fileName = 'SE2026_';
+  if(selectedBulan){
+    fileName += selectedBulan.replace(/\s+/g, '_');
+  } else {
+    fileName += 'Semua_Bulan';
+  }
+  if(selectedJenis === 'filtered'){
+    fileName += '_Filter';
+  } else if(selectedJenis === 'original'){
+    fileName += '_Asli';
+  }
+  fileName += '.xlsx';
+
+  let downloadUrl = API_URL + '?action=download';
+  if(selectedBulan) downloadUrl += '&bulan=' + encodeURIComponent(selectedBulan);
+  if(selectedJenis) downloadUrl += '&jenis=' + encodeURIComponent(selectedJenis);
+
+  showNotice('⬇ Memproses download Excel, harap tunggu...');
+  elDownloadBtn.disabled = true;
+
+  try {
+    const response = await fetch(downloadUrl);
+    const contentType = response.headers.get('content-type');
+    if(contentType && contentType.includes('application/json')){
+      const json = await response.json();
+      if(json.error) throw new Error(json.error);
+    }
+    if(!response.ok) throw new Error('HTTP ' + response.status);
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+    showNotice('⬇ File Excel berhasil diunduh: ' + fileName, 'success');
+  } catch(err) {
+    showNotice('❌ Gagal download: ' + err.message, 'error');
+    console.error('Download error:', err);
+  } finally {
+    elDownloadBtn.disabled = false;
+  }
+}
+
+// ====== TAB SWITCHING ======
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    CURRENT_TAB = tab.dataset.tab;
+
+    document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+    if(CURRENT_TAB === 'grafik'){
+      document.getElementById('grafikView').classList.add('active');
+    } else if(CURRENT_TAB === 'data'){
+      document.getElementById('dataView').classList.add('active');
+    } else if(CURRENT_TAB === 'log'){
+      document.getElementById('logView').classList.add('active');
+    }
+  });
+});
+
+// ====== EVENT LISTENERS ======
+elFilterTahun.addEventListener('change', () => {
+  updateStats();
+  renderCharts();
+  renderData();
+});
+elFilterBulan.addEventListener('change', () => {
+  updateStats();
+  renderCharts();
+  renderData();
+});
+elFilterJenis.addEventListener('change', () => {
+  updateStats();
+  renderCharts();
+  renderData();
+});
+elDownloadBtn.addEventListener('click', downloadExcel);
+
+// ====== INIT ======
+loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pasien BPJS RSUD Suriansyah — Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz@8..60&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#1c2630;
+    --paper:#f5f0e8;
+    --paper-raised:#ffffff;
+    --rule:#d8d2c4;
+    --accent:#b4452f;
+    --accent-soft:#f0ddd4;
+    --good:#3f6b4f;
+    --good-soft:#e1ebe2;
+    --warn:#a87b1f;
+    --warn-soft:#f3e8d2;
+    --muted:#6b6358;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Source Serif 4', serif;
+    --sans: 'Inter', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--sans);}
+
+  .wrap{max-width:1200px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.page{
+    border-bottom:3px double var(--ink);
+    padding-bottom:18px;
+    margin-bottom:22px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 8px;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:clamp(28px,4.5vw,42px);
+    line-height:1.08;
+    margin:0 0 8px;
+    letter-spacing:-.01em;
+  }
+  .sub{font-size:15px;color:var(--muted);margin:0;line-height:1.5;}
+
+  /* ---- status bar ---- */
+  .status-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:18px;
+  }
+  .status-dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--rule);
+    flex-shrink:0;
+  }
+  .status-dot.ok{background:var(--good);}
+  .status-dot.err{background:var(--accent);}
+  .status-dot.loading{background:var(--warn);animation:pulse 1s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  /* ---- filter bar ---- */
+  .filter-bar{
+    background:var(--paper-raised);
+    border:1.5px solid var(--rule);
+    border-radius:4px;
+    padding:22px 24px;
+    margin-bottom:22px;
+    box-shadow:0 2px 0 rgba(0,0,0,.03);
+  }
+  .filter-label{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--muted);
+    margin:0 0 14px;
+    display:block;
+  }
+  .filter-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:12px;
+    align-items:end;
+  }
+  .filter-group{display:flex;flex-direction:column;gap:6px;}
+  .filter-group label{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .filter-group select, .filter-group button{
+    font-family:var(--sans);
+    font-size:14px;
+    padding:10px 12px;
+    border:2px solid var(--rule);
+    border-radius:3px;
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    width:100%;
+  }
+  .filter-group select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .filter-group select option{font-size:14px;}
+
+  .btn-download{
+    background:var(--good)!important;
+    color:#fff!important;
+    border-color:var(--good)!important;
+    font-weight:600;
+    transition:opacity .15s;
+  }
+  .btn-download:hover{opacity:.85;}
+  .btn-download:disabled{
+    background:#a8a194!important;
+    border-color:#a8a194!important;
+    cursor:not-allowed;
+    opacity:.7;
+  }
+
+  /* ---- tabs ---- */
+  .tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:20px;
+    border-bottom:2px solid var(--rule);
+    padding-bottom:0;
+  }
+  .tab{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    padding:10px 20px;
+    background:transparent;
+    border:none;
+    border-bottom:3px solid transparent;
+    color:var(--muted);
+    cursor:pointer;
+    font-weight:600;
+    transition:all .15s;
+  }
+  .tab:hover{color:var(--ink);}
+  .tab.active{
+    color:var(--ink);
+    border-bottom-color:var(--accent);
+  }
+
+  /* ---- table ---- */
+  .table-wrap{
+    background:var(--paper-raised);
+    border:1.5px solid var(--rule);
+    border-radius:4px;
+    overflow:hidden;
+    margin-bottom:22px;
+  }
+  .table-header{
+    background:var(--ink);
+    color:#fff;
+    padding:16px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .table-header h2{
+    font-family:var(--serif);
+    font-size:20px;
+    font-weight:700;
+    margin:0;
+  }
+  .table-header .count{
+    font-family:var(--mono);
+    font-size:12px;
+    color:#cfc6b4;
+  }
+  .table-scroll{overflow-x:auto;}
+  table.data-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    min-width:400px;
+  }
+  table.data-table thead th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    border-bottom:2px solid var(--ink);
+    padding:10px 12px;
+    white-space:nowrap;
+    background:#f8f6f1;
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+  table.data-table thead th.num{text-align:right;}
+  table.data-table tbody td{
+    padding:9px 12px;
+    border-bottom:1.5px solid var(--rule);
+    vertical-align:top;
+  }
+  table.data-table tbody td.num{
+    text-align:right;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  table.data-table tbody tr:hover{background:#fbfaf6;}
+  table.data-table tbody tr:nth-child(even){background:#faf8f3;}
+  table.data-table tbody tr:nth-child(even):hover{background:#f5f2ea;}
+
+  /* ---- empty / error ---- */
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty-state .glyph{font-family:var(--mono);font-size:32px;color:var(--rule);margin-bottom:14px;display:block;}
+  .empty-state p{margin:6px 0;font-size:15px;line-height:1.6;}
+
+  .load-error{
+    background:var(--accent-soft);
+    border:1.5px solid var(--accent);
+    color:#7a2e1c;
+    padding:16px 20px;
+    border-radius:4px;
+    font-size:14px;
+    font-family:var(--mono);
+    line-height:1.6;
+  }
+
+  /* ---- log view ---- */
+  .log-view{display:none;}
+  .log-view.active{display:block;}
+
+  /* ---- notice ---- */
+  .notice{
+    background:var(--warn-soft);
+    border:1.5px solid var(--warn);
+    color:#5c4413;
+    padding:12px 16px;
+    border-radius:4px;
+    font-size:13px;
+    font-family:var(--mono);
+    margin-bottom:16px;
+    display:none;
+  }
+  .notice.show{display:block;}
+  .notice.success{
+    background:var(--good-soft);
+    border-color:var(--good);
+    color:var(--good);
+  }
+  .notice.error{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+
+  footer.page{
+    margin-top:40px;
+    padding-top:16px;
+    border-top:1.5px solid var(--rule);
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:.03em;
+    line-height:1.6;
+  }
+
+  @media (max-width:768px){
+    .filter-grid{grid-template-columns:1fr;}
+    .table-header h2{font-size:17px;}
+    .tabs{overflow-x:auto;flex-wrap:nowrap;}
+    .tab{white-space:nowrap;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <p class="eyebrow">RSUD Suriansyah · Kab. Banjarmasin</p>
+    <h1>Pasien BPJS RSUD Suriansyah</h1>
+    <p class="sub">Dashboard monitoring data pasien BPJS per bulan.</p>
+  </header>
+
+  <div class="status-bar">
+    <span class="status-dot loading" id="statusDot"></span>
+    <span id="statusText">Memuat data dari server…</span>
+  </div>
+
+  <div class="filter-bar">
+    <label class="filter-label">Filter & Aksi</label>
+    <div class="filter-grid">
+      <div class="filter-group">
+        <label for="filterBulan">Bulan / Sheet</label>
+        <select id="filterBulan">
+          <option value="">Semua Bulan</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterJenis">Jenis Sheet</label>
+        <select id="filterJenis">
+          <option value="all">Semua Sheet</option>
+          <option value="filtered">Hanya Sheet Filter (Rambai & Kasturi)</option>
+          <option value="original">Hanya Sheet Asli</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>&nbsp;</label>
+        <button id="downloadBtn" class="btn-download" type="button">⬇ Download Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="data">📊 Data</button>
+    <button class="tab" data-tab="log">📋 Log</button>
+  </div>
+
+  <div class="notice" id="notice"></div>
+
+  <!-- DATA VIEW -->
+  <div id="dataView">
+    <div id="resultArea"></div>
+  </div>
+
+  <!-- LOG VIEW -->
+  <div id="logView" class="log-view">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h2>📋 Log Eksekusi</h2>
+        <span class="count" id="logCount">0 entri</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="logTable">
+          <thead>
+            <tr>
+              <th>Waktu Eksekusi</th>
+              <th>Sheet Sumber</th>
+              <th>Sheet Hasil</th>
+              <th class="num">Baris Asli</th>
+              <th class="num">Baris Hasil</th>
+              <th class="num">Persentase</th>
+              <th>Rincian</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="page">
+    DATA SUMBER: GOOGLE SHEETS VIA WEB API · RSUD Suriansyah
+  </footer>
+</div>
+
+<script>
+// ====== KONFIGURASI ======
+const API_URL = "https://script.google.com/macros/s/AKfycbyCUxoSxOZ90qBvtCFaJSGxE_gRYZrVzS0Eocb5Q1H6mGVukiP6fvWndXCG99auTLkYpQ/exec";
+const SUFFIX_FILTER = " (RAMBAI DAN KASTURI)";
+
+// Index kolom yang ditampilkan (0-based): B=1, J=9
+const KOLOM_TAMPIL = [1, 9];
+
+let ALL_DATA = {};      // { sheetName: { headers: [], rows: [] } }
+let LOG_DATA = [];      // Array log entries
+let CURRENT_TAB = 'data';
+
+const elStatusDot = document.getElementById('statusDot');
+const elStatusText = document.getElementById('statusText');
+const elFilterBulan = document.getElementById('filterBulan');
+const elFilterJenis = document.getElementById('filterJenis');
+const elResult = document.getElementById('resultArea');
+const elLogBody = document.getElementById('logBody');
+const elLogCount = document.getElementById('logCount');
+const elNotice = document.getElementById('notice');
+const elDownloadBtn = document.getElementById('downloadBtn');
+
+function setStatus(state, text){
+  elStatusDot.className = 'status-dot ' + state;
+  elStatusText.textContent = text;
+}
+
+function showNotice(text, type='info'){
+  elNotice.textContent = text;
+  elNotice.className = 'notice show ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+  setTimeout(() => elNotice.classList.remove('show'), 5000);
+}
+
+function escapeHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtDate(d){
+  if(!d) return '–';
+  const date = new Date(d);
+  if(isNaN(date)) return String(d);
+  return date.toLocaleString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+
+// ====== FETCH DATA ======
+async function loadData(){
+  setStatus('loading', 'Memuat data dari server…');
+  elDownloadBtn.disabled = true;
+  try{
+    const res = await fetch(API_URL + '?_=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    if(json.error) throw new Error(json.error);
+
+    ALL_DATA = json.data || {};
+    LOG_DATA = json.log || [];
+
+    populateBulanFilter();
+    renderData();  // Tampilkan data langsung setelah load
+    renderLog();
+
+    const totalSheets = Object.keys(ALL_DATA).length;
+    setStatus('ok', 'Data termuat · ' + totalSheets + ' sheet · ' + LOG_DATA.length + ' log');
+    elDownloadBtn.disabled = false;
+
+  }catch(err){
+    setStatus('err', 'Gagal memuat data');
+    elDownloadBtn.disabled = true;
+    elResult.innerHTML = '<div class="load-error">Gagal mengambil data dari server.<br>Penyebab: ' + escapeHtml(err.message) + '<br><br>Periksa koneksi internet atau coba refresh halaman.</div>';
+  }
+}
+
+// ====== POPULATE FILTER ======
+function populateBulanFilter(){
+  const sheets = Object.keys(ALL_DATA).sort();
+  const bulanSet = new Set();
+
+  sheets.forEach(name => {
+    let baseName = name;
+    if(name.includes(SUFFIX_FILTER)){
+      baseName = name.replace(SUFFIX_FILTER, '');
+    }
+    bulanSet.add(baseName);
+  });
+
+  elFilterBulan.innerHTML = '<option value="">Semua Bulan</option>';
+  Array.from(bulanSet).sort().forEach(bulan => {
+    const opt = document.createElement('option');
+    opt.value = bulan;
+    opt.textContent = bulan;
+    elFilterBulan.appendChild(opt);
+  });
+}
+
+// ====== RENDER DATA (hanya kolom B dan J) ======
+function renderData(){
+  const selectedBulan = elFilterBulan.value;
+  const selectedJenis = elFilterJenis.value;
+
+  let sheetsToShow = [];
+
+  Object.entries(ALL_DATA).forEach(([sheetName, sheetData]) => {
+    const isFiltered = sheetName.includes(SUFFIX_FILTER);
+    const baseName = isFiltered ? sheetName.replace(SUFFIX_FILTER, '') : sheetName;
+
+    if(selectedJenis === 'filtered' && !isFiltered) return;
+    if(selectedJenis === 'original' && isFiltered) return;
+    if(selectedBulan && baseName !== selectedBulan) return;
+
+    sheetsToShow.push({ name: sheetName, data: sheetData, isFiltered });
+  });
+
+  if(sheetsToShow.length === 0){
+    elResult.innerHTML = `
+      <div class="empty-state">
+        <span class="glyph">[ ∅ ]</span>
+        <p>Tidak ada data yang cocok dengan filter.</p>
+        <p>Coba ubah filter bulan atau jenis sheet.</p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  sheetsToShow.forEach(({ name, data, isFiltered }) => {
+    const allHeaders = data.headers || [];
+    const allRows = data.rows || [];
+
+    // Ambil hanya kolom B (index 1) dan J (index 9)
+    const displayHeaders = KOLOM_TAMPIL.map(idx => allHeaders[idx] || 'Kolom ' + (idx + 1));
+    const displayRows = allRows.map(row => KOLOM_TAMPIL.map(idx => row[idx]));
+
+    const badge = isFiltered
+      ? '<span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--good);background:var(--good-soft);border:1px solid var(--good);border-radius:3px;padding:1px 8px;margin-left:8px;vertical-align:middle;">FILTER</span>'
+      : '<span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--muted);background:#f0ece4;border:1px solid var(--rule);border-radius:3px;padding:1px 8px;margin-left:8px;vertical-align:middle;">ASLI</span>';
+
+    // Build table header (hanya 2 kolom)
+    let thHtml = displayHeaders.map(h => '<th>' + escapeHtml(h) + '</th>').join('');
+
+    // Build table rows (max 100 baris)
+    const maxRows = 100;
+    const showRows = displayRows.slice(0, maxRows);
+    let trHtml = showRows.map(row => {
+      return '<tr>' + row.map(cell => '<td>' + escapeHtml(cell) + '</td>').join('') + '</tr>';
+    }).join('');
+
+    if(displayRows.length > maxRows){
+      trHtml += '<tr><td colspan="2" style="text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;padding:16px;">... dan ' + (displayRows.length - maxRows) + ' baris lainnya (gunakan Download Excel untuk melihat semua) ...</td></tr>';
+    }
+
+    html += `
+      <div class="table-wrap">
+        <div class="table-header">
+          <div>
+            <h2>${escapeHtml(name)}${badge}</h2>
+            <span class="count">${displayRows.length.toLocaleString('id-ID')} baris · 2 kolom (B & J)</span>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr>${thHtml}</tr></thead>
+            <tbody>${trHtml}</tbody>
+          </table>
+        </div>
+      </div>`;
+  });
+
+  elResult.innerHTML = html;
+}
+
+// ====== RENDER LOG ======
+function renderLog(){
+  if(LOG_DATA.length === 0){
+    elLogBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">Belum ada data log.</td></tr>';
+    elLogCount.textContent = '0 entri';
+    return;
+  }
+
+  const rowsHtml = LOG_DATA.map(entry => {
+    return `<tr>
+      <td>${fmtDate(entry.waktu)}</td>
+      <td>${escapeHtml(entry.sheetSumber || '')}</td>
+      <td>${escapeHtml(entry.sheetHasil || '')}</td>
+      <td class="num">${(entry.barisAsli || 0).toLocaleString('id-ID')}</td>
+      <td class="num">${(entry.barisHasil || 0).toLocaleString('id-ID')}</td>
+      <td class="num">${entry.persentase || '0%'}</td>
+      <td>${escapeHtml(entry.rincian || '')}</td>
+    </tr>`;
+  }).join('');
+
+  elLogBody.innerHTML = rowsHtml;
+  elLogCount.textContent = LOG_DATA.length + ' entri';
+}
+
+// ====== DOWNLOAD EXCEL ======
+function downloadExcel(){
+  // Detect if mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if(isMobile){
+    showNotice('⬇ Download Excel hanya tersedia di PC/Desktop. Silakan buka halaman ini di komputer.', 'error');
+    return;
+  }
+
+  const selectedBulan = elFilterBulan.value;
+  const selectedJenis = elFilterJenis.value;
+
+  // Build download URL
+  let downloadUrl = API_URL + '?action=download';
+  if(selectedBulan) downloadUrl += '&bulan=' + encodeURIComponent(selectedBulan);
+  if(selectedJenis) downloadUrl += '&jenis=' + encodeURIComponent(selectedJenis);
+
+  showNotice('⬇ Memproses download Excel, harap tunggu...');
+
+  // Download via iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = downloadUrl;
+  document.body.appendChild(iframe);
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+    showNotice('⬇ File Excel sedang diunduh. Periksa folder download Anda.', 'success');
+  }, 3000);
+}
+
+// ====== TAB SWITCHING ======
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    CURRENT_TAB = tab.dataset.tab;
+
+    if(CURRENT_TAB === 'data'){
+      document.getElementById('dataView').style.display = 'block';
+      document.getElementById('logView').classList.remove('active');
+    }else{
+      document.getElementById('dataView').style.display = 'none';
+      document.getElementById('logView').classList.add('active');
+    }
+  });
+});
+
+// ====== EVENT LISTENERS — Auto render saat filter berubah ======
+elFilterBulan.addEventListener('change', renderData);
+elFilterJenis.addEventListener('change', renderData);
+elDownloadBtn.addEventListener('click', downloadExcel);
+
+// ====== INIT ======
+loadData();
+</script>
+</body>
+</html>
